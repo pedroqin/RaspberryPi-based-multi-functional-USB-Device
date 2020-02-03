@@ -1,0 +1,10 @@
+GUI r
+DELAY 0.01
+STRING notepad
+DELAY 0.1
+ENTER
+DELAY 0.1
+Your Computer had been hacked !
+DELAY 0.1
+ENTER
+DELAY 0.01
