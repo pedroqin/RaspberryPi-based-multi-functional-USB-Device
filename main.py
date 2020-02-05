@@ -83,10 +83,11 @@ menu_str="""
 7. Re-GetIP -> ./get_info.sh Re-GetIP
 8. Cat Cmdline -> ./get_info.sh CatCmdline
 9. Cat WlanCfg -> ./get_info.sh CatWlanCfg
-10. Export Log -> ./get_info.sh Export_log %s
-11. REBOOT -> sync;reboot
-12. POWEROFF -> sync;poweroff
-13. EXIT -> exit
+10. BadUSB Example -> ./get_info.sh BadUSB_Example
+11. Export Log -> ./get_info.sh Export_log %s
+12. REBOOT -> sync;reboot
+13. POWEROFF -> sync;poweroff
+14. EXIT -> exit
 """
 
 # menu list
@@ -205,7 +206,7 @@ def draw_info(info_str,color="BLUE"):
         cur_display_first = select_index + 1 - max_lines_can_be_shown
     elif select_index - cur_display_first <= 0 :
         cur_display_first = select_index 
-    draw_str(all_centent , begin = cur_display_first , selected=select_index - cur_display_first)
+    draw_str(all_centent , begin = cur_display_first , selected=select_index - cur_display_first,color=color)
     disp.ShowImage(image1,0,0)
 
 # show list / show cmd is different
@@ -247,6 +248,13 @@ def show(source_list,run_cmd=0):
             cur_display_first=cur_display_first_bp
             show(menu)
 
+def save_image(image,path="/mnt",color="GREEN"):
+    image_name=os.path.join(path,"image_" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + ".jpg")
+    image.save(image_name, quality=95)
+    info_str="%s Saved !" % image_name
+    logger.debug(info_str)
+    draw_info(format_str(info_str),color)
+
 def listen_kbd(source_list,enable_ok=1,enable_cancel=1):
     global select_index
     while 1:
@@ -271,7 +279,8 @@ def listen_kbd(source_list,enable_ok=1,enable_cancel=1):
             time.sleep(interval_second)
             
         if not GPIO.input(KEY_PRESS_PIN):
-            print("CENTER")
+            logger.debug("KEY,center")
+            save_image(image1)
             time.sleep(interval_second)
             
         if not GPIO.input(KEY1_PIN):

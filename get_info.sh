@@ -180,7 +180,17 @@ function enable_ap()
     print_run "nohup create_ap -n wlan0 $AP_name $AP_pwd > /tmp/create_ap_log_${DATE}.log 2>&1 &"
 }
 
+function badusb_example()
+{
+    if [ ! -f /tmp/enable_hid.lock ];then
+        red_message "Have you enabled Keyboard Mode and reboot?"
+        return 1
+    else
+        cd $whereami/keyboard
+        ./read_input.sh -f write_warning.cmd2run
+    fi
 
+}
 
 case $1 in
 
@@ -243,6 +253,10 @@ case $1 in
     Export_log)
     shift
     export_log "$@"
+    ;;
+
+    BadUSB_Example)
+    badusb_example
     ;;
 
     PI-as-keyboard)

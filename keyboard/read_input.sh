@@ -138,6 +138,9 @@ function get_cmd()
             prefix="\x08"
             press_one_key "$prefix" "${line#* }"
             ;;
+            REM)
+            continue
+            ;;
             STR)
             input_string "${line#* }"
             ;;
@@ -172,13 +175,13 @@ function console_mode()
 
     done
 
-
 }
 
 case $1 in 
     -f|--file)
     shift
     file="${1}"
+    [ ! -f "$file" ] && echo "Can't find file: $file !" && exit 1
     get_cmd "$(cat $file)"
     ;;
     
