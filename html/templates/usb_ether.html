@@ -1,0 +1,110 @@
+﻿{% extends "layout.html" %}
+{% block tittle %}
+<title>U盘模式和网卡模式</title>
+{% endblock %}
+{% block body %}
+<div id="export_content">
+  <div class="output_wrapper" id="output_wrapper_id">
+    <h1><span>U盘模式和网卡模式</span></h1>
+    <h3 id="h"><span>实现原理</span></h3>
+    <p>一般来说，USB 设备有两种，一种是 Host，比如电脑，可以去读取其他 USB 设备的数据，另外一种是
+      Device，比如键盘鼠标优盘智能手机。而OTG（文末附录<code>what is OTG</code>）实现了设备在host 和
+      slave（peripheral）间转换。例如支持OTG功能的智能手机可以作为host读取优盘内容。</p>
+    <p>在树莓派系统<code>/boot/overlays/README</code>中，关于 USB controller driver的描述如下（文末附录<code>关于dwc_otg与dwc2的区别</code>）：
+    </p>
+    <pre><code class="hljs sql"><span class="linenum hljs-number"> 1</span>Name:&nbsp;&nbsp;&nbsp;dwc-otg<br><span class="linenum hljs-number"> 2</span>Info:&nbsp;&nbsp;&nbsp;Selects&nbsp;the&nbsp;dwc_otg&nbsp;USB&nbsp;controller&nbsp;driver&nbsp;which&nbsp;has&nbsp;fiq&nbsp;support.&nbsp;This&nbsp;<br><span class="linenum hljs-number"> 3</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;is&nbsp;the&nbsp;default&nbsp;on&nbsp;all&nbsp;except&nbsp;the&nbsp;Pi&nbsp;Zero&nbsp;which&nbsp;defaults&nbsp;to&nbsp;dwc2.<br><span class="linenum hljs-number"> 4</span><span class="hljs-keyword">Load</span>:&nbsp;&nbsp;&nbsp;dtoverlay=dwc-otg<br><span class="linenum hljs-number"> 5</span>Params:&nbsp;&lt;<span class="hljs-keyword">None</span>&gt;<br><span class="linenum hljs-number"> 6</span><br><span class="linenum hljs-number"> 7</span><br><span class="linenum hljs-number"> 8</span><span class="hljs-keyword">Name</span>:&nbsp;&nbsp;&nbsp;dwc2<br><span class="linenum hljs-number"> 9</span>Info:&nbsp;&nbsp;&nbsp;Selects&nbsp;the&nbsp;dwc2&nbsp;USB&nbsp;controller&nbsp;driver<br><span class="linenum hljs-number">10</span><span class="hljs-keyword">Load</span>:&nbsp;&nbsp;&nbsp;dtoverlay=dwc2,&lt;param&gt;=&lt;val&gt;<br><span class="linenum hljs-number">11</span>Params:&nbsp;dr_mode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dual&nbsp;<span class="hljs-keyword">role</span>&nbsp;<span class="hljs-keyword">mode</span>:&nbsp;<span class="hljs-string">"host"</span>,&nbsp;<span class="hljs-string">"peripheral"</span>&nbsp;<span class="hljs-keyword">or</span>&nbsp;<span class="hljs-string">"otg"</span><br><span class="linenum hljs-number">12</span><br><span class="linenum hljs-number">13</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g-rx-fifo-<span class="hljs-keyword">size</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-keyword">Size</span>&nbsp;<span class="hljs-keyword">of</span>&nbsp;rx&nbsp;fifo&nbsp;<span class="hljs-keyword">size</span>&nbsp;<span class="hljs-keyword">in</span>&nbsp;gadget&nbsp;<span class="hljs-keyword">mode</span><br><span class="linenum hljs-number">14</span><br><span class="linenum hljs-number">15</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g-np-tx-fifo-<span class="hljs-keyword">size</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-keyword">Size</span>&nbsp;<span class="hljs-keyword">of</span>&nbsp;non-periodic&nbsp;tx&nbsp;fifo&nbsp;<span class="hljs-keyword">size</span>&nbsp;<span class="hljs-keyword">in</span>&nbsp;gadget<br><span class="linenum hljs-number">16</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-keyword">mode</span><br></code></pre>
+    <p>这是由于在目前所有树莓派中，只有树莓派Zero系列支持OTG，故只有树莓派Zero的驱动为支持host和slave的dwc2，这使得实现U盘模式和网卡模式等成为可能</p>
+    <h3 id="h-1"><span>实现</span></h3>
+    <h4 id="h-2"><span>网卡模式</span></h4>
+    <p>可参考“基于树莓派的多功能USB实现--系统安装”一文中“开机准备”-&gt;“Plan B”</p>
+    <h5 id="h-3"><span>设置步骤</span></h5>
+    <ol>
+      <li><span>在根目录下面的config.txt文件的末尾添加一行</span></li>
+    </ol>
+    <pre><code class="hljs ini"><span class="linenum hljs-number">1</span><span class="hljs-attr">dtoverlay</span>=dwc2<br></code></pre>
+    <ol start="2">
+      <li><span>若要网卡模式，打开 cmdline.txt 在 rootwait 后面添加如下内容。</span></li>
+    </ol>
+    <pre><code class="hljs ini"><span class="linenum hljs-number">1</span><span class="hljs-attr">modules-load</span>=dwc2,g_ether<br></code></pre>
+    <ol start="3">
+      <li><span>重启。</span></li>
+      <li><code>ifconfig</code>会出现usb0网卡</li>
+    </ol>
+    <pre><code class="hljs ruby"><span class="linenum hljs-number"> 1</span>root@raspberrypi<span class="hljs-symbol">:~</span><span class="hljs-comment">#&nbsp;ifconfig</span><br><span class="linenum hljs-number"> 2</span><span class="hljs-symbol">lo:</span>&nbsp;flags=<span class="hljs-number">73</span>&lt;UP,LOOPBACK,RUNNING&gt;&nbsp;&nbsp;mtu&nbsp;<span class="hljs-number">65536</span><br><span class="linenum hljs-number"> 3</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet&nbsp;<span class="hljs-number">127.0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">1</span>&nbsp;&nbsp;netmask&nbsp;<span class="hljs-number">255.0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span><br><span class="linenum hljs-number"> 4</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet6&nbsp;<span class="hljs-symbol">:</span><span class="hljs-symbol">:</span><span class="hljs-number">1</span>&nbsp;&nbsp;prefixlen&nbsp;<span class="hljs-number">128</span>&nbsp;&nbsp;scopeid&nbsp;<span class="hljs-number">0x10</span>&lt;host&gt;<br><span class="linenum hljs-number"> 5</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;&nbsp;txqueuelen&nbsp;<span class="hljs-number">1000</span>&nbsp;&nbsp;(Local&nbsp;Loopback)<br><span class="linenum hljs-number"> 6</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RX&nbsp;packets&nbsp;<span class="hljs-number">4</span>&nbsp;&nbsp;bytes&nbsp;<span class="hljs-number">444</span>&nbsp;(<span class="hljs-number">444.0</span>&nbsp;B)<br><span class="linenum hljs-number"> 7</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RX&nbsp;errors&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;dropped&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;overruns&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;frame&nbsp;<span class="hljs-number">0</span><br><span class="linenum hljs-number"> 8</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TX&nbsp;packets&nbsp;<span class="hljs-number">4</span>&nbsp;&nbsp;bytes&nbsp;<span class="hljs-number">444</span>&nbsp;(<span class="hljs-number">444.0</span>&nbsp;B)<br><span class="linenum hljs-number"> 9</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TX&nbsp;errors&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;dropped&nbsp;<span class="hljs-number">0</span>&nbsp;overruns&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;carrier&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;collisions&nbsp;<span class="hljs-number">0</span><br><span class="linenum hljs-number">10</span><br><span class="linenum hljs-number">11</span><span class="hljs-symbol">usb0:</span>&nbsp;flags=<span class="hljs-number">4163</span>&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;&nbsp;&nbsp;mtu&nbsp;<span class="hljs-number">1500</span><br><span class="linenum hljs-number">12</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet&nbsp;<span class="hljs-number">169.254</span>.<span class="hljs-number">85.97</span>&nbsp;&nbsp;netmask&nbsp;<span class="hljs-number">255.255</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>&nbsp;&nbsp;broadcast&nbsp;<span class="hljs-number">169.254</span>.<span class="hljs-number">255.255</span><br><span class="linenum hljs-number">13</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet6&nbsp;fe80::<span class="hljs-symbol">ebd3:</span><span class="hljs-number">772</span><span class="hljs-symbol">b:</span><span class="hljs-number">6391</span><span class="hljs-symbol">:bfde</span>&nbsp;&nbsp;prefixlen&nbsp;<span class="hljs-number">64</span>&nbsp;&nbsp;scopeid&nbsp;<span class="hljs-number">0x20</span>&lt;link&gt;<br><span class="linenum hljs-number">14</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ether&nbsp;<span class="hljs-number">32</span><span class="hljs-symbol">:f7</span><span class="hljs-symbol">:c3</span><span class="hljs-symbol">:</span><span class="hljs-number">1</span><span class="hljs-symbol">c:</span><span class="hljs-symbol">e2:</span><span class="hljs-number">00</span>&nbsp;&nbsp;txqueuelen&nbsp;<span class="hljs-number">1000</span>&nbsp;&nbsp;(Ethernet)<br><span class="linenum hljs-number">15</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RX&nbsp;packets&nbsp;<span class="hljs-number">942</span>&nbsp;&nbsp;bytes&nbsp;<span class="hljs-number">69082</span>&nbsp;(<span class="hljs-number">67.4</span>&nbsp;KiB)<br><span class="linenum hljs-number">16</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RX&nbsp;errors&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;dropped&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;overruns&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;frame&nbsp;<span class="hljs-number">0</span><br><span class="linenum hljs-number">17</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TX&nbsp;packets&nbsp;<span class="hljs-number">31</span>&nbsp;&nbsp;bytes&nbsp;<span class="hljs-number">5556</span>&nbsp;(<span class="hljs-number">5.4</span>&nbsp;KiB)<br><span class="linenum hljs-number">18</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TX&nbsp;errors&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;dropped&nbsp;<span class="hljs-number">0</span>&nbsp;overruns&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;carrier&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;collisions&nbsp;<span class="hljs-number">0</span><br><span class="linenum hljs-number">19</span><br><span class="linenum hljs-number">20</span><span class="hljs-symbol">wlan0:</span>&nbsp;flags=<span class="hljs-number">4163</span>&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;&nbsp;&nbsp;mtu&nbsp;<span class="hljs-number">1500</span><br><span class="linenum hljs-number">21</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet&nbsp;<span class="hljs-number">192.168</span>.<span class="hljs-number">18.10</span>&nbsp;&nbsp;netmask&nbsp;<span class="hljs-number">255.255</span>.<span class="hljs-number">255.0</span>&nbsp;&nbsp;broadcast&nbsp;<span class="hljs-number">192.168</span>.<span class="hljs-number">18.255</span><br><span class="linenum hljs-number">22</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet6&nbsp;<span class="hljs-number">2408</span><span class="hljs-symbol">:</span><span class="hljs-number">8210</span><span class="hljs-symbol">:</span><span class="hljs-number">904</span><span class="hljs-symbol">a:</span><span class="hljs-symbol">ce10:</span><span class="hljs-symbol">ba27:</span><span class="hljs-symbol">ebff:</span><span class="hljs-symbol">fed6:</span>bd35&nbsp;&nbsp;prefixlen&nbsp;<span class="hljs-number">128</span>&nbsp;&nbsp;scopeid&nbsp;<span class="hljs-number">0x0</span>&lt;global&gt;<br><span class="linenum hljs-number">23</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet6&nbsp;fe80::<span class="hljs-symbol">d265:</span><span class="hljs-symbol">e222:</span><span class="hljs-symbol">f80b:</span>bafe&nbsp;&nbsp;prefixlen&nbsp;<span class="hljs-number">64</span>&nbsp;&nbsp;scopeid&nbsp;<span class="hljs-number">0x20</span>&lt;link&gt;<br><span class="linenum hljs-number">24</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inet6&nbsp;<span class="hljs-number">2408</span><span class="hljs-symbol">:</span><span class="hljs-number">8210</span><span class="hljs-symbol">:</span><span class="hljs-number">904</span><span class="hljs-symbol">a:</span><span class="hljs-symbol">ce10:</span><span class="hljs-number">9858</span><span class="hljs-symbol">:ac15</span><span class="hljs-symbol">:</span><span class="hljs-number">2</span><span class="hljs-symbol">a92:</span>ac26&nbsp;&nbsp;prefixlen&nbsp;<span class="hljs-number">64</span>&nbsp;&nbsp;scopeid&nbsp;<span class="hljs-number">0x0</span>&lt;global&gt;<br><span class="linenum hljs-number">25</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ether&nbsp;<span class="hljs-symbol">b8:</span><span class="hljs-number">27</span><span class="hljs-symbol">:eb</span><span class="hljs-symbol">:d6</span><span class="hljs-symbol">:bd</span><span class="hljs-symbol">:</span><span class="hljs-number">35</span>&nbsp;&nbsp;txqueuelen&nbsp;<span class="hljs-number">1000</span>&nbsp;&nbsp;(Ethernet)<br><span class="linenum hljs-number">26</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RX&nbsp;packets&nbsp;<span class="hljs-number">1322</span>&nbsp;&nbsp;bytes&nbsp;<span class="hljs-number">88862</span>&nbsp;(<span class="hljs-number">86.7</span>&nbsp;KiB)<br><span class="linenum hljs-number">27</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RX&nbsp;errors&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;dropped&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;overruns&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;frame&nbsp;<span class="hljs-number">0</span><br><span class="linenum hljs-number">28</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TX&nbsp;packets&nbsp;<span class="hljs-number">93</span>&nbsp;&nbsp;bytes&nbsp;<span class="hljs-number">18435</span>&nbsp;(<span class="hljs-number">18.0</span>&nbsp;KiB)<br><span class="linenum hljs-number">29</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TX&nbsp;errors&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;dropped&nbsp;<span class="hljs-number">0</span>&nbsp;overruns&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;carrier&nbsp;<span class="hljs-number">0</span>&nbsp;&nbsp;collisions&nbsp;<span class="hljs-number">0</span><br></code></pre>
+    <h5 id="h-4"><span>应用</span></h5>
+    <p>该模式目前个人主要用于ssh连接树莓派</p>
+    <h4 id="hu"><span>U盘模式</span></h4>
+    <h5 id="h-5"><span>设置步骤</span></h5>
+    <ol>
+      <li><span>在根目录下面的config.txt文件的末尾添加一行</span></li>
+    </ol>
+    <pre><code class="hljs ini"><span class="linenum hljs-number">1</span><span class="hljs-attr">dtoverlay</span>=dwc2<br></code></pre>
+    <ol start="2">
+      <li><span>若要网卡模式，打开 cmdline.txt 在 rootwait 后面添加如下内容</span></li>
+    </ol>
+    <pre><code class="hljs ini"><span class="linenum hljs-number">1</span><span class="hljs-attr">modules-load</span>=dwc2,g_mass_storage<br></code></pre>
+    <ol start="3">
+      <li><span>重启</span></li>
+      <li><span>新建一个2g的镜像文件</span></li>
+    </ol>
+    <pre><code class="hljs javascript"><span class="linenum hljs-number">1</span>dd&nbsp;<span class="hljs-keyword">if</span>=<span class="hljs-regexp">/dev/</span>zero&nbsp;<span class="hljs-keyword">of</span>=<span class="hljs-regexp">/home/my</span>_u_disk.bin&nbsp;bs=<span class="hljs-number">1024</span>&nbsp;count=<span class="hljs-number">1000000</span><br></code></pre>
+    <ol start="5">
+      <li>然后格式化成<code>vfat</code>格式</li>
+    </ol>
+    <pre><code class="hljs"><span class="linenum hljs-number">1</span>mkfs.vfat&nbsp;/home/my_u_disk.bin<br></code></pre>
+    <ol start="4">
+      <li><span>执行以下命令后，若树莓派Zero插在电脑上，则在电脑上会弹出U盘设备</span></li>
+    </ol>
+    <pre><code class="hljs javascript"><span class="linenum hljs-number">1</span>modprobe&nbsp;g_mass_storage&nbsp;file=<span class="hljs-regexp">/home/my</span>_u_disk.bin&nbsp;removable=<span class="hljs-number">1</span>&nbsp;dVendor=<span class="hljs-number">0x0781</span>&nbsp;idProduct=<span class="hljs-number">0x5572</span>&nbsp;bcdDevice=<span class="hljs-number">0x011a</span>&nbsp;iManufacturer=<span class="hljs-string">"SanDisk"</span>&nbsp;iProduct=<span class="hljs-string">"Cruzer&nbsp;Switch"</span>&nbsp;iSerialNumber=<span class="hljs-string">"1234567890"</span><br></code></pre>
+    <h5 id="h-6"><span>应用</span></h5>
+    <p>该模式可以用于模拟普通U盘，也可配合菜单选项中<code>Export log</code>，导出操作log
+      <br>需要注意的是，当U盘镜像文件<code>modprobe</code>为外界U盘时，如果<code>mount</code>U盘镜像文件到树莓派系统本地会发现，外界U盘的文件增删查改操作并不会同步显示，需<code>umount</code>和<code>rmmod</code>之后再<code>mount</code>或<code>modprobe</code>一遍才能同步。
+      <br>故在交互菜单栏中有<code>Flash U Disk</code>选项，以便在<code>Export log</code>后更新U盘显示内容</p>
+    <h3 id="h-7"><span>附录</span></h3>
+    <h4 id="hdwc_otgdwc2"><span>dwc_otg与dwc2</span></h4>
+    <blockquote>
+      <p>dwc_otg is the driver that has been heavily patched to squeeze most performance &amp; function in host mode
+        on the Pi: the fiq stuff etc. So heavily patched that, despite the name, <strong>it only does host mode &amp;
+          not OTG</strong>. <br>dwc2 is an upstream driver which can do the OTG host/gadget flip dictated by
+        OTG_SENSE. In host mode performance will pale of dwc_otg, hence it's only recommended for gadget mode.</p>
+    </blockquote>
+    <h4 id="hwhatisotg"><span>what is OTG</span></h4>
+    <blockquote>
+      <p>USB On-The-Go (USB OTG or just OTG) is a specification first used in late 2001 that allows USB devices, such
+        as tablets or smartphones, to act as a host, allowing other USB devices, such as USB flash drives, digital
+        cameras, mice or keyboards, to be attached to them. Use of USB OTG allows those devices to switch back and
+        forth between the roles of host and device. A mobile phone may read from removable media as the host device,
+        but present itself as a USB Mass Storage Device when connected to a host computer.</p>
+    </blockquote>
+    <h4 id="h-8"><span>三种模式</span></h4>
+    <blockquote>
+      <p>Using the modules </p>
+      <ul>
+        <li><span>g_serial - To use the standard serial module, you need to tell the Pi to forward the serial console
+            to it with sudo systemctl enable getty@ttyGS0.service, then you can connect to the device via Putty or
+            Screen. </span></li>
+        <li><span>g_ether - Using virtual ethernet, you should simply be able to ssh into the address of your
+            Raspberry Pi. To do this, there is a little extra configuration required though. There is a few ways we
+            could set up the point to point networking. The proper way would be to set up a DHCP server on one of the
+            ends. A far simplier was though is just to give the Raspberry Pi a fixed IP address. To do this, you will
+            need to run sudo echo -e "interface usb0 \nstatic ip_address=169.254.64.64" &gt;&gt; /etc/dhcpcd.conf. You
+            can then access the Raspberry Pi Zero by connecting to 169.254.64.64, or by using raspberrypi.local if
+            your computer has Bonjour installed (Mac and most Linux OSs including Raspbian). Note this method does not
+            support adding a fixed address to the cmdline.txt file. For that, you have to use the Ethernet only kernel
+            below.</span></li>
+        <li><span>g_mass_storage - To have your Pi Zero appear as a mass storage device (flash drive), first create a
+            mini filesystem in a file on your Pi with sudo dd if=/dev/zero of=/piusb.bin bs=512 count=2880 and set it
+            up as a fat32 filesystem with sudo mkdosfs /piusb.bin. Then, when enabling it, add file=/piusb.bin stall=0
+            onto the end, for example sudo modprobe g_mass_storage file=/piusb.bin stall=0. </span></li>
+      </ul>
+      <p>In theory, most USB devices should work alongside these kernels, to switch to USB OTG mode, simply don't use
+        an OTG adapter cable and use a standard USB cable to plug your Pi Zero into another computer, it should auto
+        switch.</p>
+    </blockquote>
+    <h3 id="h-9"><span>参考链接</span></h3>
+    <p>Difference between DWCOTG and DWC2(https://www.raspberrypi.org/forums/viewtopic.php?t=179259) <br>USB
+      On-The-Go(https://en.wikipedia.org/wiki/USB_On-The-Go) <br>树莓派 /boot/overlays/README <br>Raspberry Pi Zero OTG
+      Mode(https://gist.github.com/gbaman/50b6cca61dd1c3f88f41)</p>
+  </div>
+</div>
+{% endblock %}

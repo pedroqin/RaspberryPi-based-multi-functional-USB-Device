@@ -1,0 +1,51 @@
+﻿{% extends "layout.html" %}
+{% block tittle %}
+<title>无线AP模式</title>
+{% endblock %}
+{% block body %}
+<div id="export_content">
+  <div class="output_wrapper" id="output_wrapper_id">
+    <h1><span>无线AP模式</span></h1>
+    <h3 id="h"><span>模式用处</span></h3>
+    <p>树莓派最终作为独立的多功能USB设备时，可能会面对相对复杂的应用环境。为了脱离HDMI转接线，路由器，电脑等环境的限制，故添加了无线AP模式以应对特殊使用场景。
+      <br>在按键开启无线AP模式以后，树莓派可作为具有路由功能的三层设备，只需手机等终端连接热点即可完成树莓派的完全控制，也可结合BadUSB功能实现无线USB功能</p>
+    <h3 id="h-1"><span>实现</span></h3>
+    <p>实现AP模式需要用到一个开源项目<code>https://github.com/oblique/create_ap</code>，详细信息可在github上查看</p>
+    <ol>
+      <li><span>安装软件</span></li>
+    </ol>
+    <pre><code class="hljs bash"><span class="linenum hljs-number">1</span>git&nbsp;<span class="hljs-built_in">clone</span>&nbsp;https://github.com/oblique/create_ap<br><span class="linenum hljs-number">2</span><span class="hljs-built_in">cd</span>&nbsp;create_ap<br><span class="linenum hljs-number">3</span>sudo&nbsp;make&nbsp;install<br></code></pre>
+    <ol start="2">
+      <li><span>安装依赖工具</span></li>
+    </ol>
+    <pre><code class="hljs cs"><span class="linenum hljs-number">1</span>apt-<span class="hljs-keyword">get</span>&nbsp;install&nbsp;util-linux&nbsp;procps&nbsp;hostapd&nbsp;iproute2&nbsp;iw&nbsp;haveged&nbsp;dnsmasq<br></code></pre>
+    <ol start="3">
+      <li><span>尝试运行时，会报错</span></li>
+    </ol>
+    <pre><code class="hljs ruby"><span class="linenum hljs-number">1</span>root@raspberrypi<span class="hljs-symbol">:~/init_os</span><span class="hljs-comment">#&nbsp;create_ap&nbsp;-n&nbsp;wlan0&nbsp;My_AP&nbsp;12345678</span><br><span class="linenum hljs-number">2</span><span class="hljs-symbol">WARN:</span>&nbsp;brmfmac&nbsp;driver&nbsp;doesn<span class="hljs-string">'t&nbsp;work&nbsp;properly&nbsp;with&nbsp;virtual&nbsp;interfaces&nbsp;and<br><span class="linenum hljs-number">3</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;it&nbsp;can&nbsp;cause&nbsp;kernel&nbsp;panic.&nbsp;For&nbsp;this&nbsp;reason&nbsp;we&nbsp;disallow&nbsp;virtual<br><span class="linenum hljs-number">4</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;interfaces&nbsp;for&nbsp;your&nbsp;adapter.<br><span class="linenum hljs-number">5</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For&nbsp;more&nbsp;info:&nbsp;https://github.com/oblique/create_ap/issues/203<br><span class="linenum hljs-number">6</span>ERROR:&nbsp;Your&nbsp;adapter&nbsp;can&nbsp;not&nbsp;be&nbsp;a&nbsp;station&nbsp;(i.e.&nbsp;be&nbsp;connected)&nbsp;and&nbsp;an&nbsp;AP&nbsp;at&nbsp;the&nbsp;same&nbsp;time<br><span class="linenum hljs-number">7</span>root@raspberrypi:~/init_os#<br><span class="linenum hljs-number">8</span></span><br></code></pre>
+    <p>这是由于树莓派无线适配器当前处于无线网卡模式，而其不支持同时做无线终端和AP</p>
+    <pre><code class="hljs ruby"><span class="linenum hljs-number">1</span>root@raspberrypi<span class="hljs-symbol">:~/init_os</span><span class="hljs-comment">#&nbsp;ps&nbsp;aux|grep&nbsp;"iwlan0"</span><br><span class="linenum hljs-number">2</span>root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-number">356</span>&nbsp;&nbsp;<span class="hljs-number">0</span>.<span class="hljs-number">0</span>&nbsp;&nbsp;<span class="hljs-number">0</span>.<span class="hljs-number">9</span>&nbsp;&nbsp;<span class="hljs-number">10944</span>&nbsp;&nbsp;<span class="hljs-number">4016</span>&nbsp;?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ss&nbsp;&nbsp;&nbsp;<span class="hljs-number">02</span><span class="hljs-symbol">:</span><span class="hljs-number">27</span>&nbsp;&nbsp;&nbsp;<span class="hljs-number">0</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span>&nbsp;wpa_supplicant&nbsp;-B&nbsp;-c/etc/wpa_supplicant/wpa_supplicant.conf&nbsp;-iwlan<span class="hljs-number">0</span>&nbsp;-Dnl80211,wext<br><span class="linenum hljs-number">3</span>root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-number">1147</span>&nbsp;&nbsp;<span class="hljs-number">0</span>.<span class="hljs-number">0</span>&nbsp;&nbsp;<span class="hljs-number">0</span>.<span class="hljs-number">4</span>&nbsp;&nbsp;&nbsp;<span class="hljs-number">7304</span>&nbsp;&nbsp;<span class="hljs-number">1792</span>&nbsp;pts/<span class="hljs-number">0</span>&nbsp;&nbsp;&nbsp;&nbsp;S+&nbsp;&nbsp;&nbsp;<span class="hljs-number">03</span><span class="hljs-symbol">:</span><span class="hljs-number">54</span>&nbsp;&nbsp;&nbsp;<span class="hljs-number">0</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span>&nbsp;grep&nbsp;iwlan<span class="hljs-number">0</span><br><span class="linenum hljs-number">4</span>root@raspberrypi<span class="hljs-symbol">:~/init_os</span><span class="hljs-comment">#</span><br></code></pre>
+    <p>
+      需<code>kill</code>掉该进程后再开启AP模式，以下是该功能的实现函数。需要注意的是，在主程序调用脚本时<code>os.popen().read()</code>会阻塞进程，故此处做后台运行处理，防止树莓派在开启AP模式后假死（卡在等待<code>os.popen().read()</code>返回状态）
+    </p>
+    <pre><code class="hljs bash"><span class="linenum hljs-number"> 1</span><span class="hljs-keyword">function</span>&nbsp;<span class="hljs-function"><span class="hljs-title">enable_ap</span></span>()<br><span class="linenum hljs-number"> 2</span>{<br><span class="linenum hljs-number"> 3</span>&nbsp;&nbsp;&nbsp;&nbsp;AP_name=<span class="hljs-string">"SecretAP"</span><br><span class="linenum hljs-number"> 4</span>&nbsp;&nbsp;&nbsp;&nbsp;AP_pwd=<span class="hljs-string">"12345678"</span><br><span class="linenum hljs-number"> 5</span>&nbsp;&nbsp;&nbsp;&nbsp;pid1=`ps&nbsp;aux|grep&nbsp;&nbsp;<span class="hljs-string">"create_ap&nbsp;-n&nbsp;wlan0"</span>|grep&nbsp;-v&nbsp;grep`<br><span class="linenum hljs-number"> 6</span>&nbsp;&nbsp;&nbsp;&nbsp;pid2=`ps&nbsp;aux|grep&nbsp;<span class="hljs-string">"iwlan0"</span>|grep&nbsp;-v&nbsp;grep`<br><span class="linenum hljs-number"> 7</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-keyword">if</span>&nbsp;[&nbsp;!&nbsp;-z&nbsp;<span class="hljs-string">"<span class="hljs-variable">$pid1</span>"</span>&nbsp;-a&nbsp;-z&nbsp;<span class="hljs-string">"<span class="hljs-variable">$pid2</span>"</span>&nbsp;];<span class="hljs-keyword">then</span><br><span class="linenum hljs-number"> 8</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;green_message&nbsp;<span class="hljs-string">"It&nbsp;is&nbsp;AP&nbsp;mode&nbsp;now,skip..."</span><br><span class="linenum hljs-number"> 9</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-built_in">return</span>&nbsp;0<br><span class="linenum hljs-number">10</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-keyword">fi</span><br><span class="linenum hljs-number">11</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="hljs-built_in">kill</span>&nbsp;<span class="hljs-string">"<span class="hljs-variable">$(ps&nbsp;aux|grep&nbsp;"iwlan0"|head&nbsp;-1|awk&nbsp;'{print&nbsp;$2}')</span>"</span>&nbsp;&gt;&nbsp;/dev/null&nbsp;2&gt;&amp;1<br><span class="linenum hljs-number">12</span>&nbsp;&nbsp;&nbsp;&nbsp;DATE=`date&nbsp;+<span class="hljs-string">"%Y%m%d%H%M%S"</span>`<br><span class="linenum hljs-number">13</span>&nbsp;&nbsp;&nbsp;&nbsp;print_run&nbsp;<span class="hljs-string">"nohup&nbsp;create_ap&nbsp;-n&nbsp;wlan0&nbsp;<span class="hljs-variable">$AP_name</span>&nbsp;<span class="hljs-variable">$AP_pwd</span>&nbsp;&gt;&nbsp;/tmp/create_ap_log_<span class="hljs-variable">${DATE}</span>.log&nbsp;2&gt;&amp;1&nbsp;&amp;"</span><br><span class="linenum hljs-number">14</span>}<br></code></pre>
+    <ol start="4">
+      <li><span>该方案可以实现需要时开启AP模式，重启失效，恢复为无线终端模式。</span></li>
+    </ol>
+    <h3 id="h-2"><span>其他方案</span></h3>
+    <blockquote>
+      <p>RaspAP 是一个可以将树莓派轻松部署成无线 AP（Access Point）的软件方案，具有一套响应式的 WebUI 来控制 WiFi，用起来和家用路由器一样方便。RaspAP 可以运行在 Raspbian
+        上，只需要先给树莓派安装好 Raspbian 系统，再通过快速安装脚本就可以轻松完成 RaspAP 的安装和配置。</p>
+    </blockquote>
+    <p>该方案易于安装，集成了webUI，但是不利于多功能USB的模块化管理。</p>
+    <h3 id="h-3"><span>实现效果</span></h3>
+    <img src="{{ url_for('static',filename='10.jpg') }}" />
+    <img src="{{ url_for('static',filename='11.jpg') }}" />
+    <img src="{{ url_for('static',filename='12.jpg') }}" />
+    <img src="{{ url_for('static',filename='13.png') }}" />
+    <h3 id="h-4"><span>参考链接</span></h3>
+    <p>create_ap（https://github.com/oblique/create_ap） <br>RaspAP：轻松实现树莓派无线
+      AP（https://shumeipai.nxez.com/2019/09/30/raspap-webgui-installation-guide.html）</p>
+  </div>
+</div>
+{% endblock %}

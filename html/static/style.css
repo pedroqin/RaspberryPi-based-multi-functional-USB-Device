@@ -1,0 +1,13 @@
+ body {
+     width: 100%;
+     margin: 0px;
+     padding: 0px;
+     background: rgb(81, 154, 178);
+ }
+
+ #export_content {
+     margin: 40px 20%;
+     padding: 20px;
+     border: 1px solid rgb(149, 155, 111);
+     background: rgb(255, 255, 255);
+ }

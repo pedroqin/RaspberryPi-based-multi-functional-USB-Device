@@ -1,0 +1,80 @@
+﻿{% extends "layout.html" %}
+{% block tittle %}
+<title>系统安装</title>
+{% endblock %}
+{% block body %}
+<div id="export_content">
+  <div class="output_wrapper" id="output_wrapper_id">
+    <h1><span>系统安装</span></h1>
+    <blockquote>
+      <p>前些天逛X宝时偶尔看到树莓派Zero w，由于之前的树莓派3b已当礼物送给XXX当便携学习环境(就是这么没情调，咋的？不满意吗？我家里还有个2U dell
+        710,要不要？)，手头没有一个写shell脚本的环境，十分不便，正好入手一个。后续了解到树莓派Zero的更多优点，萌生了做个多功能USB的想法</p>
+    </blockquote>
+    <h3 id="hzero"><span>树莓派Zero的优势</span></h3>
+    <p>树莓派zero w参数如下：</p>
+    <ul>
+      <li><span>Broadcom BCM2835</span></li>
+      <li><span>1GHz ARM11内核</span></li>
+      <li><span>512MB 内存</span></li>
+      <li><span>802.11 b/g/n WiFi无线网卡</span></li>
+      <li><span>低功耗蓝牙4.1 (BLE)</span></li>
+      <li><span>Micro SD 卡插槽</span></li>
+      <li><span>Mini-HDMI接口 (可输出1080p60视频)</span></li>
+      <li><span>Micro-USB供电接口</span></li>
+      <li><span>Micro-USB OTG通信接口</span></li>
+      <li><span>40PIN GPIO接口焊盘 (兼容A+/B+/2代B/3代B)</span></li>
+      <li><span>CSI摄像头接口</span></li>
+      <li><span>复合视频接口焊盘</span></li>
+      <li><span>复位接口接口焊盘</span></li>
+      <li><span>尺寸：65mm x 30mm x 5mm</span></li>
+    </ul>
+    <p>优势：保证功能健全的同时体积不到传统Raspberry Pi尺寸的一半。但是最主要的优势是：</p>
+    <blockquote>
+      <p>that USB port is not a standard type A port, instead it is a 'USB On-The-Go' port</p>
+    </blockquote>
+    <p>一般来说，USB 设备有两种，一种是 Host，比如电脑，可以去读取其他 USB 设备的数据，另外一种是 Device，比如键盘鼠标优盘。其他树莓派的USB port都只支持作为 Host，而树莓派 Zero 和 Zero
+      w 同时支持作为 Host 和 Device，这为树莓派做Bad USB提供了前提</p>
+    <h3 id="h"><span>材料购买和组装</span></h3>
+    <p>由于要做多功能USB，要做模式切换就需要交互界面，故购买如下设备，Zero KEY 套餐可以提供一个便携免焊接的USB口，更符合多功能USB的特点<br>（注：由于有囤SD卡，故此处选择了无卡套餐，能省则省！）
+    <img src="{{ url_for('static',filename='1.png') }}" />
+      <br>组装完成后如下 <br></p>
+    <img src="{{ url_for('static',filename='2.jpg') }}" />
+    <h3 id="h-1"><span>系统下载和烧录</span></h3>
+    <p>下载系统：<code>https://www.raspberrypi.org/downloads/</code>
+    <img src="{{ url_for('static',filename='3.png') }}" />
+      <br>解压，使用win32diskImager烧录到SD卡（win32diskImager可读取可写入，方便后续备份系统） </p>
+    <img src="{{ url_for('static',filename='4.png') }}" />
+    <h3 id="h-2"><span>开机准备</span></h3>
+    <p>此步主要是为了在没有Mini-HDMI转接头连接显示器时ssh连接树莓派，，首推Plan A <br>默认用户名：pi <br>密码：raspberry</p>
+    <h4 id="hplana"><span>Plan A</span></h4>
+    <ol>
+      <li><span>烧录完成后，在电脑上插入这个 SD</span></li>
+      <li>在 SD 卡根目录下面创建一个名为<code>ssh</code>的文件或目录。</li>
+      <li>在 SD 卡根目录下面创建一个名为<code>wpa_supplicant.conf</code>的文件，内容如下</li>
+    </ol>
+    <pre><code class="hljs makefile"><span class="linenum hljs-number">1</span>ctrl_interface=DIR=/var/run/wpa_supplicant&nbsp;GROUP=netdev<br><span class="linenum hljs-number">2</span>update_config=1<br><span class="linenum hljs-number">3</span>country=CN<br><span class="linenum hljs-number">4</span>network={<br><span class="linenum hljs-number">5</span>&nbsp;&nbsp;&nbsp;&nbsp;ssid=<span class="hljs-string">"WIFI&nbsp;name"</span><br><span class="linenum hljs-number">6</span>&nbsp;&nbsp;&nbsp;&nbsp;psk=<span class="hljs-string">"WIFI&nbsp;passwd"</span><br><span class="linenum hljs-number">7</span>&nbsp;&nbsp;&nbsp;&nbsp;priority=1<br><span class="linenum hljs-number">8</span>&nbsp;&nbsp;&nbsp;&nbsp;id_str=<span class="hljs-string">"test"</span><br><span class="linenum hljs-number">9</span>}<br></code></pre>
+    <ol start="4">
+      <li><span>把SD卡插到树莓派Zero 上。将组装好的树莓派Zero w上电。</span></li>
+      <li><span>通过路由器查看名字为 “raspberrypi” 的ip 地址，通过 SSH 终端（如 PuTTY）连接。</span></li>
+    </ol>
+    <h4 id="hplanb"><span>Plan B</span></h4>
+    <p>1、烧录完成后，在电脑上插入这个 SD 卡，在根目录下面的<code>config.txt</code>文件的末尾添加一行</p>
+    <pre><code class="hljs ini"><span class="linenum hljs-number">1</span><span class="hljs-attr">dtoverlay</span>=dwc2<br></code></pre>
+    <p>2、打开 cmdline.txt 在 rootwait 后面添加如下内容</p>
+    <pre><code class="hljs ini"><span class="linenum hljs-number">1</span><span class="hljs-attr">modules-load</span>=dwc2,g_ether<br></code></pre>
+    <p>3、在 SD 卡根目录下面创建一个名为<code>ssh</code>的文件或目录。 <br>4、把SD卡插到树莓派Zero 上。将组装好的树莓派Zero w到电脑上。这时你就可以通过 SSH 终端（如
+      PuTTY）连接到<code>raspberrypi.local</code> 了。如果这个不能通过这个主机名连接，那么你可能需要给 Windows 系统的电脑上安装 Bonjour、iTunes 或 Quicktime；给
+      Linux 系统安装 Avahi Daemon 以确保可以通过主机名 “raspberrypi.local” 连接到树莓派 Zero。</p>
+    <h3 id="h-3"><span>后续文章完成内容：</span></h3>
+    <ul>
+      <li><span>显示屏和按键交互菜单</span></li>
+      <li><span>U盘模式和网卡模式</span></li>
+      <li><span>BadUSB模式</span></li>
+      <li><span>无线AP模式</span></li>
+      <li><span>Web界面实现</span></li>
+    </ul>
+    <h3 id="h-4"><span>参考链接</span></h3>
+    <p>https://blog.csdn.net/yaoyutian/article/details/78811681<br>https://shumeipai.nxez.com/rpi-zero-quick-plug</p>
+  </div>
+</div>
+{% endblock %}

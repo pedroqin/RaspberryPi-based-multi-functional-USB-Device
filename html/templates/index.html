@@ -1,0 +1,57 @@
+﻿{% extends "layout.html" %}
+{% block tittle %}
+<title>RaspberryPi-based-multi-functional-USB-Device</title>
+{% endblock %}
+{% block body %}
+<div id="export_content">
+  <div class="output_wrapper" id="output_wrapper_id">
+    <blockquote>
+      <p>基于RaspberryPi Zero + Zero Key + 扩展板ST7789 实现多功能U盘</p>
+    </blockquote>
+    <h3 id="h"><span>功能简介</span></h3>
+    <h4 id="h-1"><span>单功能实现</span></h4>
+    <ul>
+      <li><span>迷你编译环境</span></li>
+      <li><span>Python自带web服务器</span></li>
+      <li><span>扩展板菜单栏显示与选择</span></li>
+      <li><span>U盘模式</span></li>
+      <li><span>网卡模式</span></li>
+      <li><span>AP模式</span></li>
+      <li><span>BadUSB 模式</span></li>
+    </ul>
+    <h4 id="h-2"><span>组合功能</span></h4>
+    <ul>
+      <li><span>扩展板菜单栏显示与选择 + BadUSB模式：实现脚本化键盘输入</span></li>
+      <li><span>扩展板菜单栏显示与选择 + AP模式 + BadUSB模式：实现手机端控制电脑键盘输入</span></li>
+      <li><span>扩展板菜单栏显示与选择 + U盘模式 + 迷你编译环境和文件导出</span></li>
+      <li><span>…</span></li>
+    </ul>
+    <h3 id="h-3"><span>菜单详情</span></h3>
+    <ol>
+      <li><span>Get Status 获取当前树莓派状态，如IP，温度，服务状态等</span></li>
+      <li><span>U Disk Mode U盘模式</span></li>
+      <li><span>Ether Mode 网卡模式</span></li>
+      <li><span>AP Mode AP模式</span></li>
+      <li><span>Keyboard Mode 键盘模式</span></li>
+      <li><span>Flash U Disk 刷新映射出去的U盘的文件内容</span></li>
+      <li><span>Re-GetIP 重新获取IP或查看IP</span></li>
+      <li><span>Cat Cmdline 查看cmdline配置信息</span></li>
+      <li><span>Cat WlanCfg 查看Wlan配置文件</span></li>
+      <li><span>Export Log 导出log到mnt下，切换为U盘模式后可导出</span></li>
+      <li><span>REBOOT 重启</span></li>
+      <li><span>POWEROFF 关机</span></li>
+      <li><span>EXIT 退出</span></li>
+    </ol>
+    <h3 id="h-4"><span>文章列表</span></h3>
+    <ol>
+      <li><a href="os_install">系统安装</a></li>
+      <li><a href="display_button">显示屏和按键交互菜单</a></li>
+      <li><a href="usb_ether">U盘模式和网卡模式</a></li>
+      <li><a href="badUSB">BadUSB模式</a></li>
+      <li><a href="wireless_AP">无线AP模式</a></li>
+      <li><a href="display_button">Web界面实现</a></li>
+    </ol>
+    <!--<pre><code class="hljs nginx">sdas<br></code></pre>-->
+  </div>
+</div>
+{% endblock %}
